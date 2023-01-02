@@ -78,7 +78,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.olauncherHiddenApps -> showHiddenApps()
             R.id.appInfo -> openAppInfo(requireContext(), android.os.Process.myUserHandle(), BuildConfig.APPLICATION_ID)
             R.id.setLauncher -> viewModel.resetDefaultLauncherApp(requireContext())
-            R.id.publicRoadmap -> requireContext().openUrl(Constants.URL_PUBLIC_ROADMAP)
             R.id.toggleLock -> toggleLockMode()
             R.id.autoShowKeyboard -> toggleKeyboardText()
             R.id.homeAppsNum -> binding.appsNumSelectLayout.visibility = View.VISIBLE
@@ -98,7 +97,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.themeLight -> updateTheme(AppCompatDelegate.MODE_NIGHT_NO)
             R.id.themeDark -> updateTheme(AppCompatDelegate.MODE_NIGHT_YES)
             R.id.themeSystem -> updateTheme(AppCompatDelegate.MODE_NIGHT_FOLLOW_SYSTEM)
-            R.id.acceptAccessibility -> openAccessibilityService()
+            R.id.actionAccessibility -> openAccessibilityService()
             R.id.closeAccessibility -> toggleAccessibilityVisibility(false)
 
             R.id.maxApps0 -> updateHomeAppsNum(0)
@@ -126,10 +125,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             R.id.rate -> {
                 prefs.rateClicked = true
                 rateApp()
-            }
-            R.id.affiliate -> {
-                viewModel.showSupportDialog(true)
-                findNavController().popBackStack()
             }
             R.id.twitter -> requireContext().openUrl(Constants.URL_TWITTER_TANUJ)
             R.id.instagram -> requireContext().openUrl(Constants.URL_INSTA_OLAUNCHER)
@@ -165,7 +160,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.scrollLayout.setOnClickListener(this)
         binding.appInfo.setOnClickListener(this)
         binding.setLauncher.setOnClickListener(this)
-        binding.publicRoadmap.setOnClickListener(this)
         binding.autoShowKeyboard.setOnClickListener(this)
         binding.toggleLock.setOnClickListener(this)
         binding.homeAppsNum.setOnClickListener(this)
@@ -190,7 +184,7 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.themeLight.setOnClickListener(this)
         binding.themeDark.setOnClickListener(this)
         binding.themeSystem.setOnClickListener(this)
-        binding.acceptAccessibility.setOnClickListener(this)
+        binding.actionAccessibility.setOnClickListener(this)
         binding.closeAccessibility.setOnClickListener(this)
 
         binding.about.setOnClickListener(this)
@@ -200,7 +194,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
         binding.instagram.setOnClickListener(this)
         binding.privacy.setOnClickListener(this)
         binding.github.setOnClickListener(this)
-        binding.affiliate.setOnClickListener(this)
         binding.moreApps.setOnClickListener(this)
 
         binding.maxApps0.setOnClickListener(this)
@@ -230,7 +223,6 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
             if (it) {
                 binding.setLauncher.text = getString(R.string.change_default_launcher)
                 prefs.toShowHintCounter = prefs.toShowHintCounter + 1
-                binding.publicRoadmap.visibility = View.VISIBLE
             }
         }
         viewModel.homeAppAlignment.observe(viewLifecycleOwner) {
@@ -332,30 +324,26 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun toggleAccessibilityVisibility(show: Boolean) {
-        binding.scrollView.isVisible = show.not()
+        if (isAccessServiceEnabled(requireContext()))
+            binding.actionAccessibility.text = getString(R.string.disable)
         binding.accessibilityLayout.isVisible = show
+        binding.scrollView.animateAlpha(if (show) 0.5f else 1f)
     }
 
     private fun openAccessibilityService() {
         toggleAccessibilityVisibility(false)
         // prefs.lockModeOn = true
         populateLockSettings()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            showToastLong(requireContext(), "Toggle accessibility permission for Olauncher")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
             startActivity(Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS))
-        }
     }
 
     private fun toggleLockMode() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            when {
-                prefs.lockModeOn -> {
-                    prefs.lockModeOn = false
-                    deviceManager.removeActiveAdmin(componentName) // for backward compatibility
-                    openAccessibilityService()
-                }
-                isAccessServiceEnabled(requireContext()) -> prefs.lockModeOn = true
-                else -> toggleAccessibilityVisibility(true)
+            toggleAccessibilityVisibility(true)
+            if (prefs.lockModeOn) {
+                prefs.lockModeOn = false
+                deviceManager.removeActiveAdmin(componentName) // for backward compatibility
             }
         } else {
             val isAdmin: Boolean = deviceManager.isAdminActive(componentName)
@@ -485,8 +473,17 @@ class SettingsFragment : Fragment(), View.OnClickListener, View.OnLongClickListe
     }
 
     private fun populateLockSettings() {
-        if (prefs.lockModeOn) binding.toggleLock.text = getString(R.string.on)
-        else binding.toggleLock.text = getString(R.string.off)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            binding.toggleLock.text = getString(
+                if (isAccessServiceEnabled(requireContext())) R.string.on
+                else R.string.off
+            )
+        } else {
+            binding.toggleLock.text = getString(
+                if (prefs.lockModeOn) R.string.on
+                else R.string.off
+            )
+        }
     }
 
     private fun populateSwipeDownAction() {

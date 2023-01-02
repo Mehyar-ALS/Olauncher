@@ -22,7 +22,6 @@ import app.olauncher.helper.*
 import app.olauncher.listener.OnSwipeTouchListener
 import app.olauncher.listener.ViewSwipeTouchListener
 
-
 class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener {
 
     private lateinit var prefs: Prefs
@@ -423,23 +422,10 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
 
             override fun onDoubleClick() {
                 super.onDoubleClick()
-                if (prefs.lockModeOn)
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                        requireActivity().runOnUiThread {
-                            if (isAccessServiceEnabled(requireContext()))
-                                binding.lock.performClick()
-                            else {
-                                prefs.lockModeOn = false
-                                showToastLong(requireContext(), "Enable double tap to lock in settings")
-                            }
-                        }
-                    } else
-                        lockPhone()
-            }
-
-            override fun onTripleClick() {
-                super.onTripleClick()
-                // changeAppTheme()
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P)
+                    binding.lock.performClick()
+                else if (prefs.lockModeOn)
+                    lockPhone()
             }
         }
     }
@@ -477,7 +463,6 @@ class HomeFragment : Fragment(), View.OnClickListener, View.OnLongClickListener 
             }
         }
     }
-
 
     override fun onDestroyView() {
         super.onDestroyView()

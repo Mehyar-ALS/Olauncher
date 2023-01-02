@@ -1,3 +1,5 @@
+# Only one difference from the original app: The maximum number of applications in the home screen has been increased to 10 applications.
+
 ![Olauncher](https://repository-images.githubusercontent.com/278638069/db0acb80-661b-11eb-803e-926cae5dccb4)
 
 
